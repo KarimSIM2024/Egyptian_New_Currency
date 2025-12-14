@@ -37,17 +37,22 @@ A deep learning project that classifies Egyptian banknotes (2023 new currency) u
 
 ## 📋 Table of Contents
 - [Problem Statement](#problem-statement)
-- [Dataset](#dataset)
-- [CNN Architecture](#cnn-architecture)
-- [Training Configuration](#training-configuration)
-- [Results](#results)
-  - [Training Curves](#training-curves)
-  - [Test Results & Metrics](#test-results--metrics)
-  - [Confusion Matrix](#confusion-matrix)
-  - [Example Predictions](#example-predictions)
-- [Quick Start](#quick-start)
-- [Usage](#usage)
+- [Dataset & Data Preprocessing](#-dataset)
+- [CNN Architecture](#-cnn-architecture)
+- [Training Configuration](#-training-configuration)
+- [Results](#-results)
+  - [Training Curves](#-training-curves)
+  - [Test Results & Metrics](#-test-results--metrics)
+  - [Confusion Matrix](#-confusion-matrix)
+  - [Example Predictions](#-example-predictions)
+- [Quick Start & Installation](#quick-start)
+- [Usage Guide](#usage)
+  - [Training from Scratch](#training-from-scratch)
+  - [Model Evaluation](#evaluation)
+  - [Batch Inference](#batch-inference)
 - [Repository Structure](#repository-structure)
+- [Key Takeaways](#key-takeaways)
+- [Project Repository](#-project-repository)
 
 ---
 
@@ -70,8 +75,7 @@ A deep learning project that classifies Egyptian banknotes (2023 new currency) u
 
 ---
 
-
-## 📊 Dataset
+## 📊 Dataset & Data Preprocessing
 
 ### Overview
 
@@ -138,6 +142,132 @@ To improve model generalization with limited data, **aggressive augmentation** w
 
 ![Augmented Samples](sample_converted_14_0.png)
 <div align="center"><i>Examples of augmented training images showing various transformations</i></div>
+
+### 🔬 Detailed Preprocessing Pipeline
+
+Our preprocessing pipeline ensures consistent input quality and optimal model performance through several key steps:
+
+#### 1️⃣ Image Loading and Format Standardization
+
+```python
+# Using Keras ImageDataGenerator for efficient data loading
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# All images are loaded and automatically:
+# - Converted to RGB format (3 channels)
+# - Resized to 96×96 pixels (fixed input size)
+# - Loaded in batches of 32 for memory efficiency
+```
+
+**Why 96×96?**
+- Balance between computational efficiency and detail preservation
+- Smaller than typical 224×224 to speed up training
+- Sufficient resolution to capture currency features (text, symbols, colors)
+
+#### 2️⃣ Pixel Normalization
+
+```python
+# Rescale pixel values from [0, 255] to [0, 1]
+rescale=1./255
+```
+
+**Purpose**:
+- Neural networks train better with normalized inputs
+- Prevents gradient explosion/vanishing
+- Ensures all features are on the same scale
+- Faster convergence during training
+
+#### 3️⃣ Training Set Augmentation (Real-time)
+
+Applied **only to training data** during training (on-the-fly):
+
+<div align="center">
+
+| Augmentation | Implementation | Effect |
+|--------------|----------------|--------|
+| **Rotation** | `rotation_range=20` | Random rotation ±20 degrees |
+| **Width Shift** | `width_shift_range=0.15` | Horizontal translation ±15% |
+| **Height Shift** | `height_shift_range=0.15` | Vertical translation ±15% |
+| **Shear** | `shear_range=0.15` | Shearing transformation ±15% |
+| **Zoom** | `zoom_range=0.2` | Zoom in/out ±20% |
+| **Brightness** | `brightness_range=[0.7, 1.3]` | Brightness variation 70%-130% |
+| **Channel Shift** | `channel_shift_range=30` | RGB channel intensity shift ±30 |
+
+</div>
+
+**Augmentation Benefits**:
+- 📈 **Increases effective training data** from 2,637 to effectively infinite variations
+- 🎯 **Prevents overfitting** by exposing model to diverse examples
+- 💪 **Improves generalization** to real-world scenarios
+- 🌍 **Simulates real conditions**: different angles, lighting, distances
+
+**What We DON'T Do**:
+- ❌ **No horizontal flip** - Currency orientation is meaningful (numbers/text direction matters)
+- ❌ **No vertical flip** - Same reason as above
+- ❌ **No augmentation on validation/test** - Ensures fair, consistent evaluation
+
+#### 4️⃣ Class Weight Computation
+
+```python
+from sklearn.utils.class_weight import compute_class_weight
+
+# Compute balanced weights for imbalanced classes
+class_weights = compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(train_generator.classes),
+    y=train_generator.classes
+)
+```
+
+**Why Class Weights?**
+- Class "1 EGP" has only **60 samples** vs "20 (new)" with **346 samples**
+- Without weights: model would ignore rare classes
+- With weights: Each "1 EGP" sample counts **5.75× more** (4.88/0.85) than "20 (new)"
+- Result: Model learns all classes equally well
+
+#### 5️⃣ Batch Processing
+
+```python
+# Data is loaded in batches of 32 images
+BATCH_SIZE = 32
+
+# Training: 2637 images → 83 batches per epoch
+# Validation: 760 images → 24 batches per epoch
+# Test: 290 images → 10 batches
+```
+
+**Benefits**:
+- 💾 **Memory efficient** - Don't load all images at once
+- ⚡ **Faster training** - GPU processes batches in parallel
+- 📊 **Better gradients** - Batch normalization statistics
+
+#### 6️⃣ Label Encoding
+
+```python
+# One-hot encoding for categorical classification
+class_mode='categorical'
+
+# Example: "10 (new)" → [0, 0, 1, 0, 0, 0, 0, 0, 0]
+#          Class index 2 is activated
+```
+
+**Preprocessing Summary**:
+
+```
+Raw Image (Variable size, 0-255 RGB)
+           ↓
+[1] Load & Resize → 96×96×3
+           ↓
+[2] Normalize → Pixels ÷ 255 → [0, 1]
+           ↓
+[3] Augment (if training) → Random transforms
+           ↓
+[4] Batch → Group 32 images
+           ↓
+[5] One-hot encode labels → 9-class vector
+           ↓
+Ready for CNN Input!
+```
 
 ---
 
@@ -792,144 +922,6 @@ Egyptian_New_Currency/
 
 ---
 
-## Future Improvements
-
-- [ ] Export to TensorFlow Lite for mobile deployment
-- [ ] Implement real-time video classification
-- [ ] Add explainability (Grad-CAM visualizations)
-- [ ] Expand dataset for rare denominations (especially 1 EGP)
-- [ ] Test on degraded/worn currency notes
-
----
-
-## 🔬 Data Preprocessing Pipeline
-
-Our preprocessing pipeline ensures consistent input quality and optimal model performance through several key steps:
-
-### 1️⃣ Image Loading and Format Standardization
-
-```python
-# Using Keras ImageDataGenerator for efficient data loading
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
-# All images are loaded and automatically:
-# - Converted to RGB format (3 channels)
-# - Resized to 96×96 pixels (fixed input size)
-# - Loaded in batches of 32 for memory efficiency
-```
-
-**Why 96×96?**
-- Balance between computational efficiency and detail preservation
-- Smaller than typical 224×224 to speed up training
-- Sufficient resolution to capture currency features (text, symbols, colors)
-
-### 2️⃣ Pixel Normalization
-
-```python
-# Rescale pixel values from [0, 255] to [0, 1]
-rescale=1./255
-```
-
-**Purpose**:
-- Neural networks train better with normalized inputs
-- Prevents gradient explosion/vanishing
-- Ensures all features are on the same scale
-- Faster convergence during training
-
-### 3️⃣ Training Set Augmentation (Real-time)
-
-Applied **only to training data** during training (on-the-fly):
-
-<div align="center">
-
-| Augmentation | Implementation | Effect |
-|--------------|----------------|--------|
-| **Rotation** | `rotation_range=20` | Random rotation ±20 degrees |
-| **Width Shift** | `width_shift_range=0.15` | Horizontal translation ±15% |
-| **Height Shift** | `height_shift_range=0.15` | Vertical translation ±15% |
-| **Shear** | `shear_range=0.15` | Shearing transformation ±15% |
-| **Zoom** | `zoom_range=0.2` | Zoom in/out ±20% |
-| **Brightness** | `brightness_range=[0.7, 1.3]` | Brightness variation 70%-130% |
-| **Channel Shift** | `channel_shift_range=30` | RGB channel intensity shift ±30 |
-
-</div>
-
-**Augmentation Benefits**:
-- 📈 **Increases effective training data** from 2,637 to effectively infinite variations
-- 🎯 **Prevents overfitting** by exposing model to diverse examples
-- 💪 **Improves generalization** to real-world scenarios
-- 🌍 **Simulates real conditions**: different angles, lighting, distances
-
-**What We DON'T Do**:
-- ❌ **No horizontal flip** - Currency orientation is meaningful (numbers/text direction matters)
-- ❌ **No vertical flip** - Same reason as above
-- ❌ **No augmentation on validation/test** - Ensures fair, consistent evaluation
-
-### 4️⃣ Class Weight Computation
-
-```python
-from sklearn.utils.class_weight import compute_class_weight
-
-# Compute balanced weights for imbalanced classes
-class_weights = compute_class_weight(
-    class_weight='balanced',
-    classes=np.unique(train_generator.classes),
-    y=train_generator.classes
-)
-```
-
-**Why Class Weights?**
-- Class "1 EGP" has only **60 samples** vs "20 (new)" with **346 samples**
-- Without weights: model would ignore rare classes
-- With weights: Each "1 EGP" sample counts **5.75× more** (4.88/0.85) than "20 (new)"
-- Result: Model learns all classes equally well
-
-### 5️⃣ Batch Processing
-
-```python
-# Data is loaded in batches of 32 images
-BATCH_SIZE = 32
-
-# Training: 2637 images → 83 batches per epoch
-# Validation: 760 images → 24 batches per epoch
-# Test: 290 images → 10 batches
-```
-
-**Benefits**:
-- 💾 **Memory efficient** - Don't load all images at once
-- ⚡ **Faster training** - GPU processes batches in parallel
-- 📊 **Better gradients** - Batch normalization statistics
-
-### 6️⃣ Label Encoding
-
-```python
-# One-hot encoding for categorical classification
-class_mode='categorical'
-
-# Example: "10 (new)" → [0, 0, 1, 0, 0, 0, 0, 0, 0]
-#          Class index 2 is activated
-```
-
-**Preprocessing Summary**:
-
-```
-Raw Image (Variable size, 0-255 RGB)
-           ↓
-[1] Load & Resize → 96×96×3
-           ↓
-[2] Normalize → Pixels ÷ 255 → [0, 1]
-           ↓
-[3] Augment (if training) → Random transforms
-           ↓
-[4] Batch → Group 32 images
-           ↓
-[5] One-hot encode labels → 9-class vector
-           ↓
-Ready for CNN Input!
-```
-
----
-
 ## 📂 Project Repository
 
 **GitHub**: [KarimSIM2024/Egyptian_New_Currency](https://github.com/KarimSIM2024/Egyptian_New_Currency)
@@ -943,3 +935,5 @@ This project is licensed under the MIT License.
 ---
 
 **Developed with ❤️ for Multimedia Deep Learning Course**
+
+
