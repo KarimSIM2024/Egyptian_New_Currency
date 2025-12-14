@@ -886,29 +886,58 @@ for fname in os.listdir(folder):
 
 ```
 Egyptian_New_Currency/
-├── README.md                          # This file
-├── sample.ipynb                       # Training notebook
-├── requirements.txt                   # Python dependencies
-├── best_currency_model.keras          # Best trained model
-├── egyptian_currency_model.keras      # Additional checkpoint
-├── model.png                          # Architecture diagram
-├── sample_converted_*.png             # Result visualizations
-├── Course Project Description.pdf     # Project brief
-├── dataset/                           # Dataset root
-│   ├── train/                        # Training images (2,637)
-│   │   ├── 1/
-│   │   ├── 5/
-│   │   ├── 10/
-│   │   ├── 10 (new)/
-│   │   ├── 20/
-│   │   ├── 20 (new)/
-│   │   ├── 50/
-│   │   ├── 100/
-│   │   └── 200/
-│   ├── valid/                        # Validation images (760)
-│   └── test/                         # Test images (290)
-└── models/                            # Additional model exports
+├── README.md                              # This file - Complete project documentation
+├── sample.ipynb                           # Main training notebook with all experiments
+├── requirements.txt                       # Python dependencies list
+│
+├── egyptian_currency_cnn_model.keras      # Trained model checkpoint
+│
+├── Course Project Description.pdf         # Original project requirements
+│
+├── sample_converted_7_0.png               # Training class distribution plot
+├── sample_converted_8_0.png               # Sample images from each class
+├── sample_converted_9_1.png               # Sample currency image with pixel info
+├── sample_converted_14_0.png              # Augmented training samples
+├── sample_converted_26_0.png              # Training curves (loss & accuracy)
+├── sample_converted_32_0.png              # Confusion matrix visualization
+├── sample_converted_34_1.png              # Example predictions on test images
+│
+└── dataset/                               # Complete dataset (3,687 images)
+    ├── train/                             # Training set (2,637 images - 71.5%)
+    │   ├── 1/                            # 60 images - 1 EGP notes
+    │   ├── 5/                            # 334 images - 5 EGP notes
+    │   ├── 10/                           # 315 images - 10 EGP old notes
+    │   ├── 10 (new)/                     # 317 images - 10 EGP new notes
+    │   ├── 20/                           # 322 images - 20 EGP old notes
+    │   ├── 20 (new)/                     # 346 images - 20 EGP new notes
+    │   ├── 50/                           # 315 images - 50 EGP notes
+    │   ├── 100/                          # 315 images - 100 EGP notes
+    │   └── 200/                          # 313 images - 200 EGP notes
+    │
+    ├── valid/                             # Validation set (760 images - 20.6%)
+    │   ├── 1/                            # 20 images
+    │   ├── 5/                            # 80 images
+    │   ├── 10/                           # 80 images
+    │   ├── 10 (new)/                     # 130 images
+    │   ├── 20/                           # 80 images
+    │   ├── 20 (new)/                     # 130 images
+    │   ├── 50/                           # 80 images
+    │   ├── 100/                          # 80 images
+    │   └── 200/                          # 80 images
+    │
+    └── test/                              # Test set (290 images - 7.9%)
+        ├── 1/                            # 20 images
+        ├── 5/                            # Various per class
+        ├── 10/                           # 35 images (old 10 EGP)
+        ├── 10 (new)/                     # New 10 EGP notes
+        ├── 20/                           # Old 20 EGP notes
+        ├── 20 (new)/                     # New 20 EGP notes
+        ├── 50/                           # 50 EGP notes
+        ├── 100/                          # 100 EGP notes
+        └── 200/                          # 200 EGP notes
 ```
+
+**Note**: The repository uses the `dataset/` folder as the primary data source for all training, validation, and testing operations.
 
 ---
 
